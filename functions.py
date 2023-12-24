@@ -113,3 +113,47 @@ def reshape_data(data):
 
 # --------------------------------------------------------------------------------------------- #
 
+def plot_phase_space(data, target_names, title):
+    fig, axs = plt.subplots(len(target_names),3, figsize=(15,5*len(target_names)))
+    coords = ["x", "y", "z"]
+    c=np.linspace(0,1,len(data[0][0]))
+
+    if len(target_names) == 1:
+        for j in range(0, 3):
+            axs[j].scatter(data[0][0].T[j], data[0][1].T[j], s=2, c=c)
+            axs[j].set_title(target_names[0] + " " + coords[j])
+    else:
+        for i in range(len(target_names)):
+            for j in range(0, 3):
+                axs[i, j].scatter(data[i][0].T[j], data[i][1].T[j], s=2, c=c)
+                axs[i, j].set_title(target_names[i] + " " + coords[j])
+
+    fig.suptitle(title)
+    plt.show()
+
+# --------------------------------------------------------------------------------------------- #
+    
+def plot_space(data, target_names, title, color=False):
+    fig = plt.figure()
+    fig.set_figheight(12)
+    fig.set_figwidth(12)
+
+    ax = fig.add_subplot(projection='3d')
+
+    if color:
+        c=np.linspace(0,1,len(data[0][0]))
+        for i in range(len(target_names)):
+            ax.scatter(data[i][0].T[0], data[i][0].T[1], data[i][0].T[2], s=1, label=target_names[i], c=c)
+
+    else:
+        for i in range(len(target_names)):
+            ax.scatter(data[i][0].T[0], data[i][0].T[1], data[i][0].T[2], s=1, label=target_names[i])
+
+    
+    #ax.view_init(elev=0, roll=0, azim=300)
+    fig.suptitle(title)
+    plt.legend()
+    plt.show()
+
+# --------------------------------------------------------------------------------------------- #
+    
