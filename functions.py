@@ -12,6 +12,7 @@ solve_ivp = scipy.integrate.solve_ivp
 
 from datetime import datetime
 import csv
+from tqdm import tqdm
 
 
 # --------------------------------------------------------------------------------------------- #
@@ -44,7 +45,7 @@ def prep_data(data, time):
     p = np.array([])
     dp = np.array([])
 
-    for j in range(len(data[0][0])-1):
+    for j in tqdm(range(len(data[0][0])-1)):
         for i in range(len(data)):
 
             q = np.append(q, data[i][0][j])
