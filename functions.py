@@ -17,6 +17,12 @@ from tqdm import tqdm
 
 # --------------------------------------------------------------------------------------------- #
 
+def norm(x):
+    # normalize input
+    return  (x.T / abs(x).max(1)).T
+
+# --------------------------------------------------------------------------------------------- #
+
 def read_data(data):
     pos = []
     vel = []
@@ -49,16 +55,16 @@ def prep_data(data, time):
         for i in range(len(data)):
 
             q = np.append(q, data[i][0][j])
-            delta = (data[i][0][j+1]-data[i][0][j])/(time[i][j+1]-time[i][j]).days
+            delta = (data[i][0][j+1]-data[i][0][j])
             dq = np.append(dq, delta)
             
             p = np.append(p, data[i][1][j])
-            delta = (data[i][1][j+1]-data[i][1][j])/(time[i][j+1]-time[i][j]).days
+            delta = (data[i][1][j+1]-data[i][1][j])
             dp = np.append(dp, delta)
 
     shape = [len(data[i][0])-1, 3*len(data)]
 
-    return q.reshape(shape), dq.reshape(shape), p.reshape(shape), dp.reshape(shape)
+    return norm(q.reshape(shape)), dq.reshape(shape), norm(p.reshape(shape)), dp.reshape(shape)
 
 # --------------------------------------------------------------------------------------------- #
 
@@ -113,8 +119,8 @@ def reshape_data(data):
             data_out[j][0][i][2] = data[3*j+2][i]
 
             data_out[j][1][i][0] = data[3*j+targets][i]
-            data_out[j][1][i][1] = data[3*j+targets][i]
-            data_out[j][1][i][2] = data[3*j+targets][i]
+            data_out[j][1][i][1] = data[3*j+targets+1][i]
+            data_out[j][1][i][2] = data[3*j+targets+2][i]
 
     return data_out
 
