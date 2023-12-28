@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 def norm(x):
     # normalize input
-    return  (x.T / abs(x).max(1)).T
+    return  (x / abs(x).max(0))
 
 # --------------------------------------------------------------------------------------------- #
 
@@ -51,20 +51,21 @@ def prep_data(data, time):
     p = np.array([])
     dp = np.array([])
 
+    shape = [len(data[0][0])-1, 3*len(data)]
+
     for j in tqdm(range(len(data[0][0])-1)):
         for i in range(len(data)):
 
             q = np.append(q, data[i][0][j])
-            delta = (data[i][0][j+1]-data[i][0][j])
-            dq = np.append(dq, delta)
-            
             p = np.append(p, data[i][1][j])
-            delta = (data[i][1][j+1]-data[i][1][j])
-            dp = np.append(dp, delta)
+    
+    q = norm(q.reshape(shape)) 
+    p = norm(p.reshape(shape))
 
-    shape = [len(data[i][0])-1, 3*len(data)]
+    dq = np.diff(q, axis=0)
+    dp = np.diff(p, axis=0)
 
-    return norm(q.reshape(shape)), dq.reshape(shape), norm(p.reshape(shape)), dp.reshape(shape)
+    return q[0:-1], dq, p[0:-1], dp   # remove last element to match diff
 
 # --------------------------------------------------------------------------------------------- #
 
@@ -76,15 +77,12 @@ def HNN(x, model):
     dH = torch.zeros_like(x_field)
 
     # Hamiltonian equations
-    # dq = dH/dp
-    dH.T[0] = x_field.T[3]
-    dH.T[1] = x_field.T[4]
-    dH.T[2] = x_field.T[5]
-
-    # dp = -dH/dq
-    dH.T[3] = -x_field.T[0]
-    dH.T[4] = -x_field.T[1]
-    dH.T[5] = -x_field.T[2]
+    objects = int(len(x_field.T)/2)
+    for i in range( objects ):
+        # dq = dH/dp
+        dH.T[i] = x_field.T[i+objects]
+        # dp = -dH/dq
+        dH.T[i+objects] = -x_field.T[i]
 
     return dH
 
