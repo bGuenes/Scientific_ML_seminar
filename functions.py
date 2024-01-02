@@ -59,13 +59,19 @@ def prep_data(data, time):
             q = np.append(q, data[i][0][j])
             p = np.append(p, data[i][1][j])
     
-    q = norm(q.reshape(shape)) 
-    p = norm(p.reshape(shape))
+    q = q.reshape(shape)
+    p = p.reshape(shape)
+
+    max_q = abs(q).max()
+    max_p = abs(p).max()
+
+    q = norm(q) 
+    p = norm(p)
 
     dq = np.diff(q, axis=0)
     dp = np.diff(p, axis=0)
 
-    return q[0:-1], dq, p[0:-1], dp   # remove last element to match diff
+    return q[0:-1], dq, p[0:-1], dp, max_q, max_p   # remove last element to match diff
 
 # --------------------------------------------------------------------------------------------- #
 
@@ -116,9 +122,9 @@ def reshape_data(data):
             data_out[j][0][i][1] = data[3*j+1][i]
             data_out[j][0][i][2] = data[3*j+2][i]
 
-            data_out[j][1][i][0] = data[3*j+targets][i]
-            data_out[j][1][i][1] = data[3*j+targets+1][i]
-            data_out[j][1][i][2] = data[3*j+targets+2][i]
+            data_out[j][1][i][0] = data[3*targets+3*j][i]
+            data_out[j][1][i][1] = data[3*targets+3*j+1][i]
+            data_out[j][1][i][2] = data[3*targets+3*j+2][i]
 
     return data_out
 
