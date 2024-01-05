@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 def norm(x):
     # normalize input
-    return  (x / abs(x).max(0))
+    return  (x / abs(x).max())
 
 # --------------------------------------------------------------------------------------------- #
 
@@ -62,8 +62,17 @@ def prep_data(data, time):
     q = q.reshape(shape)
     p = p.reshape(shape)
 
-    max_q = abs(q).max()
-    max_p = abs(p).max()
+    max_q = []
+    max_p = []
+    max = abs(data).max(2).flatten()
+    for i in range(len(data)):
+        max_q.append(max[i*6 : 6*i+3])
+        max_p.append(max[i*6+3 : 6*i+6])
+
+    max_all = np.array([max_q, max_p]).flatten()
+
+    #max_q = abs(q).max()
+    #max_p = abs(p).max()
 
     q = norm(q) 
     p = norm(p)
@@ -71,7 +80,7 @@ def prep_data(data, time):
     dq = np.diff(q, axis=0)
     dp = np.diff(p, axis=0)
 
-    return q[0:-1], dq, p[0:-1], dp, max_q, max_p   # remove last element to match diff
+    return q[0:-1], dq, p[0:-1], dp, max_all   # remove last element to match diff
 
 # --------------------------------------------------------------------------------------------- #
 
