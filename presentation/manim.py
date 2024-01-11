@@ -1,5 +1,5 @@
 from manim import *
-from manim_slides import Slide
+from manim_slides import Slide, ThreeDSlide
 import autograd.numpy as np
 import autograd
 from classes import *
@@ -22,6 +22,7 @@ q = np.load("../data/pendulum/x.npy")
 p = np.load("../data/pendulum/y.npy")
 
 q_NN, p_NN = np.load("../data/pendulum/xNN.npy")
+q_HNN, p_HNN = np.load("../data/pendulum/xHNN.npy")
 
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +80,7 @@ class S2(Slide):
 
         field = VGroup(axis, VF).shift(4*RIGHT).scale(0.7)
 
-        x0, y0 = 0.6 * q[0] + 4, 0.6 * p[0]
+        x0, y0 = 0.7 * q[0] + 4, 0.7 * p[0]
         p_dot = Dot([x0, y0, 0], color="#94424F", radius=0.05)
         p_dot_trace = TracedPath(p_dot.get_center, stroke_color="#94424F")
 
@@ -106,7 +107,7 @@ class S2(Slide):
             angle = q[2*i] - q[2*(i-1)]
             self.play(Rotate(pendulum, angle, about_point=[-3.5, 0, 0]), run_time=0.01)
 
-            x, y = 0.6 * q[2*i] + 4, 0.6 * p[2*i]
+            x, y = 0.7 * q[2*i] + 4, 0.7 * p[2*i]
             self.play(p_dot.animate.move_to([x, y, 0]), run_time=0.01)
         self.next_slide()
         self.clear()
@@ -147,7 +148,7 @@ class S3(Slide):
         VF_NN = ArrowVectorField(func, x_range=[-2.5, 2.5, 0.4], y_range=[-2.5, 2.5, 0.4], colors=["#ABF5D1", "#87C2A5", "#456354"])
         field_NN = VGroup(axis, VF_NN).shift(4*RIGHT).scale(0.7)
 
-        x0, y0 = 0.6 * q_NN[0] + 4, 0.6 * p_NN[0]
+        x0, y0 = 0.7 * q_NN[0] + 4, 0.7 * p_NN[0]
         p_dot = Dot([x0, y0, 0], color="#94424F", radius=0.05)
         p_dot_trace = TracedPath(p_dot.get_center, stroke_color="#94424F")
 
@@ -193,7 +194,7 @@ class S3(Slide):
             angle = q_NN[2*i] - q_NN[2*(i-1)]
             self.play(Rotate(pendulum, angle, about_point=[-3.5, 0, 0]), run_time=0.01)
 
-            x, y = 0.6 * q_NN[2*i] + 4, 0.6 * p_NN[2*i]
+            x, y = 0.7 * q_NN[2*i] + 4, 0.7 * p_NN[2*i]
             self.play(p_dot.animate.move_to([x, y, 0]), run_time=0.01)
 
         # -----------------------------------
@@ -213,7 +214,7 @@ class S3(Slide):
         #title_NN = Text("Baseline NN", font=font, font_size=30, color=BLACK).next_to(field_NN, DOWN, buff=0.2)
         #grap_subs = VGroup(title_GT, title_NN)
 
-        x0, y0 = 0.6 * q[0] - 4, 0.6 * p[0]
+        x0, y0 = 0.7 * q[0] - 4, 0.7 * p[0]
         p_dot2 = Dot([x0, y0, 0], color="#94424F", radius=0.05)
         p_dot_trace2 = TracedPath(p_dot2.get_center, stroke_color="#94424F")
 
@@ -361,10 +362,123 @@ class S5(Slide):
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Slide 6
-class S6(Slide):
+class S6(ThreeDSlide):
     def construct(self):
         # Set background color
         self.camera.background_color = background_color
+
+        title = Text("Hamiltonian NN", font=font, font_size=60, color=BLACK).to_edge(UL)
+
+        # Create NN
+        HNN = NeuralNetworkMobject([2, 5, 2]).scale(1.3)
+        HNN.label_inputs(["q", "p"])
+        HNN.label_outputs(["x", "y"])
+
+        CArrow1 = CurvedArrow([2, -2, 0], [3.5, 0.6, 0], angle=1.5, color=BLACK)
+        text1 = Text("autograd", font=font, color=BLACK).move_to(3*RIGHT+UP)
+        CArrow2 = CurvedArrow([1, 1, 0], [-1, 1, 0], angle=0, color=BLACK)
+        text2 = Text("integrate", font=font, color=BLACK).move_to(3*LEFT+UP)
+        CArrow3 = CurvedArrow([-3.5, 0.6, 0], [-2, -2, 0], angle=1.5, color=BLACK)
+
+        HNN_circle = VGroup(HNN, CArrow1, text1, CArrow2, text2, CArrow3)
+
+        # Crete phase space
+        axes = ThreeDAxes(x_range=[-3.5, 3.5, 1], y_range=[-3.5, 3.5, 1], z_range=[-4, 4, 1],
+                          axis_config={"color": BLACK}, x_length=7, y_length=7)
+        labels = axes.get_axis_labels(Tex("q", color=BLACK).scale(0.5), Tex("p", color=BLACK).scale(0.5), Tex("H", color=BLACK).scale(0.5))
+        axis = VGroup(axes, labels)
+
+        HNN_model = MLP()
+        HNN_model.load_state_dict(torch.load("../data/pendulum/model_HNN.pt"))
+        HNN_model.eval()
+
+        def func(x):
+            x = torch.tensor(x[0:2], dtype=torch.float32, requires_grad=True)
+            pred = HNN_model(x)
+            pred = torch.autograd.grad(pred.sum(), x, create_graph=True)[0]
+            dH = torch.zeros_like(pred)
+            dH.T[0] = pred.T[1]
+            dH.T[1] = -pred.T[0]
+            return dH.detach().numpy()
+
+        VF_HNN = ArrowVectorField(func, x_range=[-2.5, 2.5, 0.4], y_range=[-2.5, 2.5, 0.4],
+                                 colors=["#ABF5D1", "#87C2A5", "#456354"])
+        field_HNN = VGroup(axis, VF_HNN).shift(4 * RIGHT).scale(0.7)
+
+        x0, y0 = 0.7 * q_HNN[0] + 4, 0.7 * p_HNN[0]
+        p_dot = Dot([x0, y0, 0], color="#94424F", radius=0.05)
+        p_dot_trace = TracedPath(p_dot.get_center, stroke_color="#94424F")
+
+        # Create pendulum
+        l = -3
+        start = [0, 0, 0]
+        end = [0, l, 0]
+
+        pivot = Dot(start, color=BLACK)
+        rod = Line(start, end, color=BLACK)
+        bob = Dot(end, color="#94424F", radius=0.2)
+
+        pendulum = VGroup(pivot, rod, bob).shift(3.5 * LEFT)
+
+        # -----------------------------------
+        # Animate slide 6
+        self.play(Write(title), run_time=1)
+        self.wait(1)
+        self.play(Create(HNN), run_time=3)
+
+        self.next_slide()
+        self.play(HNN.animate.move_to(2 * DOWN))
+        self.play(Create(CArrow1), run_time=1)
+        self.play(Write(text1))
+        self.play(Create(CArrow2), run_time=1)
+        self.play(Create(text2))
+        self.play(Create(CArrow3), runtime=1)
+
+        self.next_slide()
+        self.play(HNN_circle.animate.scale(0.2).next_to(title, RIGHT, buff=1), run_time=2)
+        self.play(Create(pendulum))
+        self.play(Create(axis))
+        self.play(*[GrowArrow(i) for i in VF_HNN])
+
+        self.next_slide()
+        self.play(Rotate(pendulum, q_HNN[0], about_point=[-3.5, 0, 0]), run_time=1)
+        self.play(Create(p_dot))
+        self.add(p_dot_trace)
+
+        self.next_slide()
+        for i in range(1, 200):
+            angle = q_HNN[2 * i] - q_HNN[2 * (i - 1)]
+            self.play(Rotate(pendulum, angle, about_point=[-3.5, 0, 0]), run_time=0.01)
+
+            x, y = 0.7 * q_HNN[2 * i] + 4, 0.7 * p_HNN[2 * i]
+            self.play(p_dot.animate.move_to([x, y, 0]), run_time=0.01)
+
+        # -----------------------------------
+        # Animate slide 6.5
+
+        def out(x,y):
+            coor = torch.tensor([x,y], dtype=torch.float32, requires_grad=True)
+            pred = HNN_model(coor)
+            z = 0.5*pred.detach().numpy().sum()
+            return x, y, z
+
+        # Surface of Hamiltonian
+        ham_surf = Surface(lambda x,y: out(x,y), u_range=[-2.7, 2.7], v_range=[-2.7, 2.7],
+                           resolution=100, stroke_width=0, fill_opacity=0.8)
+        ham_surf.move_to(4*RIGHT).scale(0.7)
+        ham_surf.set_fill_by_value(axes=axes, colorscale=[(ManimColor("#456354"),-1), (ManimColor("#ABF5D1"),1)])
+
+
+        self.next_slide()
+        self.play(FadeOut(pendulum, HNN_circle, title))
+        self.move_camera(phi=0.35 * PI, theta=0.3 * PI, frame_center=[4, 0, 1], run_time=2,
+                         added_anims=[Transform(VF_HNN, ham_surf)])
+        self.next_slide(loop=True)
+        self.move_camera(phi=0.35 * PI, theta=2.15 * PI, run_time=4)
+
+        self.next_slide()
+        self.clear()
+
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # play all slides
@@ -375,3 +489,4 @@ class all(Slide):
         S3.construct(self)
         S4.construct(self)
         S5.construct(self)
+        S6.construct(self)
