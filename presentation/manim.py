@@ -10,6 +10,7 @@ import torch.nn as nn
 # setup
 background_color = "#ECE7E2"
 font = "Helvetica"
+tex_font = TexFontTemplates.helvetica_fourier_it
 
 
 def hamiltonian(x):
@@ -188,7 +189,7 @@ class S3(Slide):
         self.add(p_dot_trace)
 
         self.next_slide()
-        for i in range(1, 10):
+        for i in range(1, 600):
             angle = q_NN[2*i] - q_NN[2*(i-1)]
             self.play(Rotate(pendulum, angle, about_point=[-3.5, 0, 0]), run_time=0.01)
 
@@ -208,7 +209,7 @@ class S3(Slide):
 
         field = VGroup(axis2, VF2).shift(4*LEFT).scale(0.7)
 
-        title_GT = Text("Ground Truth", font=font, font_size=30, color=BLACK).next_to(field, UP, buff=0.1)
+        title_GT = Text("Reality", font=font, font_size=30, color=BLACK).next_to(field, UP, buff=0.1)
         #title_NN = Text("Baseline NN", font=font, font_size=30, color=BLACK).next_to(field_NN, DOWN, buff=0.2)
         #grap_subs = VGroup(title_GT, title_NN)
 
@@ -228,7 +229,7 @@ class S3(Slide):
 
         self.play(Create(p_dot2))
         self.add(p_dot_trace2)
-        for i in range(1, 10):
+        for i in range(1, 200):
             x, y = 0.6 * q[2*i] - 4, 0.6 * p[2*i]
             self.play(p_dot2.animate.move_to([x, y, 0]), run_time=0.005)
 
@@ -240,6 +241,130 @@ class S3(Slide):
         self.next_slide()
         self.clear()
 
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 4
+class S4(Slide):
+    def construct(self):
+        # Set background color
+        self.camera.background_color = background_color
+
+        title = Text("Hamiltonian physics", font=font, font_size=60, color=BLACK)
+        title2 = Text("Recap Hamiltonian", font=font, font_size=60, color=BLACK).to_edge(UL)
+
+        texts = VGroup()
+
+        p1 = Tex(r"$\bullet$ Set of $\mathbf{(q,p)}$ describes full system"
+                 , tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p1)
+
+        p2 = Tex(r"$\bullet$ $\mathcal H$, so that "
+                 r"$\boldsymbol{\dot q} = \frac{\partial \mathcal H}{\partial \boldsymbol{p}}$"
+                 r" and "
+                 r"$\boldsymbol{\dot p} = -\frac{\partial \mathcal H}{\partial \boldsymbol{q}}$"
+                 , tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p2)
+
+        p3 = Tex(r"$\bullet$ $\mathcal H = E_{tot} = T + V$", tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p3)
+
+        p4 = Tex(r"$\bullet$ Symplectic gradient "
+                 r"$\boldsymbol{S}_{\mathcal H} = (\frac{\partial \mathcal H}{\partial \boldsymbol{p}},-\frac{\partial \mathcal H}{\partial \boldsymbol{q}})$"
+                 , tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p4)
+
+        p5 = Tex(r"$\bullet$ Describe time evolution with:"
+                 , tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p5)
+
+        p6 = Tex(r"     $(q_{n+1},p_{n+1}) = (q_n,p_n) + {\Huge \int} \boldsymbol{S}_{\mathcal H}(\boldsymbol{q},\boldsymbol{p})$"
+                 , tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p6)
+
+        texts.arrange(1.5*DOWN, center=False, aligned_edge=LEFT).next_to(title2, DOWN, buff=1).align_to(title2, LEFT).shift(RIGHT)
+
+        # -----------------------------------
+        # Animate slide 4
+        self.play(Write(title))
+        self.next_slide()
+        self.play(Transform(title, title2))
+        self.next_slide()
+        self.play(Write(p1))
+        self.next_slide()
+        self.play(Write(p2))
+        self.next_slide()
+        self.play(Write(p3))
+        self.next_slide()
+        self.play(Write(p4))
+        self.next_slide()
+        self.play(Write(p5))
+        self.play(Write(p6.shift(RIGHT+0.1*UP)))
+        self.next_slide()
+
+        self.clear()
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 5
+class S5(Slide):
+    def construct(self):
+        # Set background color
+        self.camera.background_color = background_color
+
+        dHq = r"\frac{\partial \mathcal H}{\partial \boldsymbol{q}}"
+        dHp = r"\frac{\partial \mathcal H}{\partial \boldsymbol{p}}"
+        dq = r"\boldsymbol{\dot q}"
+        dp = r"\boldsymbol{\dot p}"
+
+        eq1 = MathTex(dq, "=", dHp
+                      , tex_template=tex_font, font_size=60, color=BLACK).move_to(2*LEFT)
+        eq2 = MathTex(dp, "=", "-", dHq
+                      , tex_template=tex_font, font_size=60, color=BLACK).move_to(2*RIGHT)
+
+        eq12 = MathTex(dq, "-", dHp, "=", "0"
+                      , tex_template=tex_font, font_size=60, color=BLACK).move_to(2*LEFT)
+        eq22 = MathTex(dp, "+", dHq, "=", "0"
+                      , tex_template=tex_font, font_size=60, color=BLACK).move_to(2 * RIGHT)
+
+        text1 = Text("Minimize energy loss", font=font, font_size=45, color=BLACK).next_to(eq1, UP, buff=1)
+
+        eq3 = MathTex("0", "=", "(", dq, "-", dHp, ")^2", "+", "(", dp, "+", dHq, ")^2"
+                      , tex_template=tex_font, font_size=60, color=BLACK)
+
+        brace_L2 = Brace(eq3[2:-1], DOWN, buff=0.3, color=BLACK)
+        brace_L2_text = Text("L2 Loss", font=font, font_size=30, color=BLACK).next_to(brace_L2, DOWN, buff=0.1)
+
+        eq4 = MathTex(r"\text{Loss}", "=", r"\text{argmin}_{\mathcal H}", "(", dq, "-", dHp, ")^2", "+", "(", dp, "+", dHq, ")^2"
+                      , tex_template=tex_font, font_size=60, color=BLACK)
+
+        text2 = Text("Not optimizing the network output, but its gradient!"
+                     , font=font, font_size=40, color=BLACK, t2w={"optimizing":HEAVY, "gradient":HEAVY}).move_to(2*DOWN)
+
+
+        # -----------------------------------
+        # Animate slide 5
+        self.play(Write(eq1), Write(eq2))
+        self.next_slide()
+        self.play(FadeIn(text1))
+        self.next_slide()
+        self.play(TransformMatchingTex(eq1, eq12), TransformMatchingTex(eq2, eq22))
+        self.next_slide()
+        self.play(TransformMatchingTex(Group(eq12, eq22), eq3))
+        self.next_slide()
+        self.play(GrowFromCenter(brace_L2), FadeIn(brace_L2_text))
+        self.next_slide()
+        self.play(FadeOut(brace_L2), FadeOut(brace_L2_text))
+        self.play(TransformMatchingTex(eq3, eq4))
+        self.next_slide()
+        self.play(Write(text2))
+
+        self.clear()
+
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 6
+class S6(Slide):
+    def construct(self):
+        # Set background color
+        self.camera.background_color = background_color
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # play all slides
@@ -248,3 +373,5 @@ class all(Slide):
         S1.construct(self)
         S2.construct(self)
         S3.construct(self)
+        S4.construct(self)
+        S5.construct(self)
