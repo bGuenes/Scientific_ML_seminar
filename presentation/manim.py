@@ -5,6 +5,7 @@ import autograd
 from classes import *
 import torch
 import torch.nn as nn
+from tqdm import tqdm
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # setup
@@ -23,6 +24,7 @@ p = np.load("../data/pendulum/y.npy")
 
 q_NN, p_NN = np.load("../data/pendulum/xNN.npy")
 q_HNN, p_HNN = np.load("../data/pendulum/xHNN.npy")
+targets = np.load("../data/solar_system/targets.npy")
 
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -231,7 +233,7 @@ class S3(Slide):
         self.play(Create(p_dot2))
         self.add(p_dot_trace2)
         for i in range(1, 200):
-            x, y = 0.6 * q[2*i] - 4, 0.6 * p[2*i]
+            x, y = 0.7 * q[2*i] - 4, 0.7 * p[2*i]
             self.play(p_dot2.animate.move_to([x, y, 0]), run_time=0.005)
 
 
@@ -258,14 +260,14 @@ class S4(Slide):
                  , tex_template=tex_font, font_size=45, color=BLACK)
         texts.add(p1)
 
-        p2 = Tex(r"$\bullet$ $\mathcal H$, so that "
+        p2 = Tex(r"$\bullet$ $\mathcal H = E_{tot} = T + V$", tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(p2)
+
+        p3 = Tex(r"$\bullet$ $\mathcal H$, so that "
                  r"$\boldsymbol{\dot q} = \frac{\partial \mathcal H}{\partial \boldsymbol{p}}$"
                  r" and "
                  r"$\boldsymbol{\dot p} = -\frac{\partial \mathcal H}{\partial \boldsymbol{q}}$"
                  , tex_template=tex_font, font_size=45, color=BLACK)
-        texts.add(p2)
-
-        p3 = Tex(r"$\bullet$ $\mathcal H = E_{tot} = T + V$", tex_template=tex_font, font_size=45, color=BLACK)
         texts.add(p3)
 
         p4 = Tex(r"$\bullet$ Symplectic gradient "
@@ -356,9 +358,9 @@ class S5(Slide):
         self.play(TransformMatchingTex(eq3, eq4))
         self.next_slide()
         self.play(Write(text2))
+        self.next_slide()
 
         self.clear()
-
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # Slide 6
@@ -446,7 +448,7 @@ class S6(ThreeDSlide):
         self.add(p_dot_trace)
 
         self.next_slide()
-        for i in range(1, 200):
+        for i in range(1, 400):
             angle = q_HNN[2 * i] - q_HNN[2 * (i - 1)]
             self.play(Rotate(pendulum, angle, about_point=[-3.5, 0, 0]), run_time=0.01)
 
@@ -471,18 +473,207 @@ class S6(ThreeDSlide):
 
         self.next_slide()
         self.play(FadeOut(pendulum, HNN_circle, title))
-        self.move_camera(phi=0.35 * PI, theta=0.3 * PI, frame_center=[4, 0, 1], run_time=2,
+        self.move_camera(phi=0.35 * PI, theta=0.3 * PI, frame_center=[4, 0, 1], zoom =1.3, run_time=2,
                          added_anims=[Transform(VF_HNN, ham_surf)])
         self.next_slide(loop=True)
-        self.move_camera(phi=0.35 * PI, theta=2.15 * PI, run_time=4)
+        self.begin_ambient_camera_rotation(rate=PI / 5)
+        self.wait(20)
+        self.next_slide()
+        self.clear()
+        self.set_camera_orientation(phi=0, theta=0, frame_center=[0, 0, 0])
 
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 7
+class S7(Slide):
+    def construct(self):
+        # Set background color
+        self.camera.background_color = background_color
+
+        title = Text("code...", font='Monospace', font_size=80, color=BLACK, slant=ITALIC)
+
+        self.play(Write(title))
+        self.next_slide()
+        self.clear()
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 8
+class S8(Slide):
+    def construct(self):
+        # Set background color
+        self.camera.background_color = background_color
+
+        texts = VGroup()
+
+        title = Text("Applications", font=font, font_size=60, color=BLACK).to_edge(UL)
+
+        text1 = Tex(r"Learn Hamiltonian of a system", tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(text1)
+
+        text2 = Tex("--> all energy conserving systems", tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(text2)
+
+        text3 = Tex("Not many examples...", tex_template=tex_font, font_size=45, color=BLACK)
+        texts.add(text3)
+
+        texts.arrange(1.5*DOWN, center=False, aligned_edge=LEFT).next_to(title, DOWN, buff=1).align_to(title, LEFT).shift(RIGHT)
+
+        # -----------------------------------
+        # Animate slide 8
+
+        self.play(Write(title))
+        self.next_slide()
+        self.play(Write(text1))
+        self.next_slide()
+        self.play(Write(text2.shift(0.5*RIGHT)))
+        self.next_slide()
+        self.play(Write(text3.shift(1.5*DOWN)))
+        self.next_slide()
+        self.clear()
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 9
+class S9(ThreeDSlide):
+    def construct(self):
+        self.camera.background_color = "#ECE7E2"
+        self.set_camera_orientation(phi=0.35 * PI, theta=0.3 * PI)
+
+        data = np.load("../data/solar_system/data.npy")
+
+        objects = VGroup()
+
+        s = Sphere([0, 0, 0], radius=0.01).set_color(YELLOW)
+        objects.add(s)
+
+        max = abs(data).max(2).max(1).max(0)
+        colors = ["#979393", "#D5D6D0", "#BF9373", "#A78E80", '#A4976B', "#941751", "#0433FF"]
+        for i in range(len(data)):
+            x = 6 * data[i][0].T[0] / max[0]
+            y = 6 * data[i][0].T[1] / max[1]
+            z = 3 * data[i][0].T[2] / max[2]
+
+            if targets[i] == "uranus" or targets[i] == "neptun":
+                n = 4
+            else:
+                n = 20
+
+            for j in tqdm(range(int(len(x) / n))):
+                p = Dot([x[j * n], y[j * n], z[j * n]], color=colors[i], radius=0.005)
+                objects.add(p)
+
+        self.play(FadeIn(objects.scale(4)))
+        self.begin_ambient_camera_rotation(rate=1, about='theta')
+        self.play(objects.animate.scale(0.2), run_time=6)
+        self.wait(10)
+        self.next_slide()
+        self.clear()
+        self.set_camera_orientation(phi=0, theta=0)
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 10
+class S10(Slide):
+    def construct(self):
+        self.camera.background_color = background_color
+
+        title = Text("Solar System", font=font, font_size=60, color=BLACK).to_edge(UL)
+        im = ImageMobject("HNN outlines/HNN outlines.002.jpeg")
+
+        anims = [FadeIn(im), Write(title)]
+
+        self.play(AnimationGroup(*anims))
+        self.next_slide()
+        self.clear()
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 11
+class S11(Slide):
+    def construct(self):
+        self.camera.background_color = background_color
+
+        im = ImageMobject("HNN outlines/HNN outlines.003.jpeg")
+
+        anims = [FadeIn(im)]
+
+        self.play(AnimationGroup(*anims))
+        self.next_slide()
+        self.clear()
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 12
+class S12(Slide):
+    def construct(self):
+        self.camera.background_color = background_color
+
+        title = Text("Pros and Cons", font=font, font_size=60, color=BLACK).to_edge(UL)
+
+        all = VGroup()
+        pros = VGroup()
+        cons = VGroup()
+
+        pro1 = Tex(r"$\bullet$ Energy conserving", tex_template=tex_font, font_size=45, color=BLACK)
+        pros.add(pro1)
+        pro2 = Tex(r"$\bullet$ Solve complex Hamiltonians", tex_template=tex_font, font_size=45, color=BLACK)
+        pros.add(pro2)
+        pro3 = Tex(r"$\bullet$ Time reversible", tex_template=tex_font, font_size=45, color=BLACK)
+        pros.add(pro3)
+        pro4 = Tex(r"$\bullet$ Free on starting conditions", tex_template=tex_font, font_size=45, color=BLACK)
+        pros.add(pro4)
+
+        con1 = Tex(r"$\bullet$ Computational demanding", tex_template=tex_font, font_size=45, color=BLACK)
+        cons.add(con1)
+        con2 = Tex(r"$\bullet$ Limited to Hamiltonians", tex_template=tex_font, font_size=45, color=BLACK)
+        cons.add(con2)
+        con3 = Tex(r"$\bullet$ Errors accumulate", tex_template=tex_font, font_size=45, color=BLACK)
+        cons.add(con3)
+
+
+
+        pros.arrange(1.5*DOWN, center=False, aligned_edge=LEFT).next_to(title, 2*DOWN, buff=1).align_to(title, LEFT).shift(0.5*RIGHT)
+        cons.arrange(1.5*DOWN, center=False, aligned_edge=LEFT).next_to(title, 2*DOWN, buff=1).align_to(title, LEFT).shift(7.5*RIGHT)
+
+        box1 = SurroundingRectangle(pros, buff=0.25, color=GREEN, fill_color=GREEN, fill_opacity=0.2, corner_radius=0.2)
+        box2 = SurroundingRectangle(cons, buff=0.25, color=RED, fill_color=RED, fill_opacity=0.2, corner_radius=0.2)
+
+        all.add(pros, cons, box1, box2)
+
+        self.play(Write(title))
+        self.play(FadeIn(all))
+        self.next_slide()
+        self.clear()
+
+# /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+# Slide 13
+class S13(Slide):
+    def construct(self):
+        self.camera.background_color = background_color
+
+        title = Text("Sources", font=font, font_size=60, color=BLACK).to_edge(UL)
+
+        text = VGroup()
+
+        text1 = Text(r"Greydanus S. 2019. Hamiltonian Neural Networks. https://doi.org/10.48550/arXiv.1906.01563"
+                    , font=font, font_size=20, color=BLACK)
+        text.add(text1)
+        text2 = Text(r"https://github.com/greydanus/hamiltonian-nn"
+                    , font=font, font_size=20, color=BLACK)
+        text.add(text2)
+        text3 = Text(r"https://scholar.harvard.edu/files/marios_matthaiakis/files/mlinastronomy_pinns_chile2021.pdf"
+                    , font=font, font_size=20, color=BLACK)
+        text.add(text3)
+        text4 = Text(r"https://en.wikipedia.org/wiki/Hamiltonian_mechanics"
+                    , font=font, font_size=20, color=BLACK)
+        text.add(text4)
+
+        text.arrange(1.5*DOWN, center=False, aligned_edge=LEFT).next_to(title, DOWN, buff=1).align_to(title, LEFT).shift(RIGHT)
+        text.add(title)
+
+        self.play(FadeIn(text))
         self.next_slide()
         self.clear()
 
 
 # /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 # play all slides
-class all(Slide):
+class all(ThreeDSlide):
     def construct(self):
         S1.construct(self)
         S2.construct(self)
@@ -490,3 +681,11 @@ class all(Slide):
         S4.construct(self)
         S5.construct(self)
         S6.construct(self)
+        S7.construct(self)
+        S8.construct(self)
+        S9.construct(self)
+        S10.construct(self)
+        S11.construct(self)
+        S12.construct(self)
+        S13.construct(self)
+

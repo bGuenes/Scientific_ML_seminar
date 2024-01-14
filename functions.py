@@ -62,25 +62,36 @@ def prep_data(data, time):
     q = q.reshape(shape)
     p = p.reshape(shape)
 
-    '''max_q = []
+    max_q = []
     max_p = []
     max = abs(data).max(2).flatten()
     for i in range(len(data)):
         max_q.append(max[i*6 : 6*i+3])
         max_p.append(max[i*6+3 : 6*i+6])
 
-    max_all = np.array([max_q, max_p]).flatten()'''
+    max_q = np.array(max_q).flatten()
+    max_p = np.array(max_p).flatten()
 
-    max_q = abs(q).max()
+    for j in range(len(q.T)):
+        q.T[j] = q.T[j] / max_q[j]
+        p.T[j] = p.T[j] / max_p[j]
+
+    max_all = np.array([max_q, max_p]).flatten()
+
+    """max_q = abs(q).max()
     max_p = abs(p).max()
 
     q = norm(q) 
-    p = norm(p)
+    p = norm(p)"""
 
-    dq = np.diff(q, axis=0)
+    dq = np.diff(q, axis=0) 
     dp = np.diff(p, axis=0)
 
-    return q[0:-1], dq, p[0:-1], dp, max_q, max_p   # remove last element to match diff
+    """for j in range(len(data)):
+        dq.T[3*j:3*j+3] = 100 * dq.T[3*j:3*j+3] / np.diff(time[j])[0].days
+        dp.T[3*j:3*j+3] = 100 * dp.T[3*j:3*j+3] / np.diff(time[j])[0].days"""
+
+    return q[0:-1], dq, p[0:-1], dp, max_all   # remove last element to match diff
 
 # --------------------------------------------------------------------------------------------- #
 

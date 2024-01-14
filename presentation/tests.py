@@ -1,13 +1,18 @@
 from manim import *
+from manim.opengl import *
 from manim_slides import Slide, ThreeDSlide
 import autograd.numpy as np
 import autograd
 from classes import *
+from tqdm import tqdm
 
 q = np.load("../data/pendulum/x.npy")
 p = np.load("../data/pendulum/y.npy")
 t = np.load("../data/pendulum/t.npy")
 q_HNN, p_HNN = np.load("../data/pendulum/xHNN.npy")
+
+data = np.load("../data/solar_system/data.npy")
+targets = np.load("../data/solar_system/targets.npy")
 
 class test1(Slide):
     def construct(self):
@@ -124,10 +129,10 @@ class test4(ThreeDSlide):
         p_dot_trace = TracedPath(p_dot.get_center, stroke_color="#94424F")
 
         # Surface of Hamiltonian
-        ham_surf = Surface(lambda x,y: out(x,y), u_range=[-2.7, 2.7], v_range=[-2.7, 2.7],
-                           resolution=50, stroke_width=0, fill_opacity=0.9)
+        ham_surf = OpenGLSurface(lambda x,y: out(x,y), u_range=[-2.7, 2.7], v_range=[-2.7, 2.7])
+                            #colorscale=[(ManimColor("#456354"),-1), (ManimColor("#ABF5D1"),1)])
         ham_surf.move_to(4*RIGHT).scale(0.7)
-        ham_surf.set_fill_by_value(axes=axes, colorscale=[(ManimColor("#456354"),-1), (ManimColor("#ABF5D1"),1)])
+        #ham_surf.set_fill_by_value(axes=axes, colorscale=[(ManimColor("#456354"),-1), (ManimColor("#ABF5D1"),1)])
 
 
 
@@ -135,12 +140,70 @@ class test4(ThreeDSlide):
         self.play(*[GrowArrow(i) for i in VF_HNN])
         self.play(Create(p_dot))
         self.add(p_dot_trace)
+        self.move_camera(phi=0.35*PI, theta=0.3*PI, frame_center=[4,0,1], zoom=1.4, run_time=2, added_anims=[Create(VF_HNN), FadeOut(ham_surf)])
+        self.next_slide(auto_next=True)
+        self.begin_ambient_camera_rotation(rate=PI/5)
+        self.wait(10)
+        self.next_slide()
+
+
+class test5(ThreeDSlide):
+    def construct(self):
+        self.camera.background_color = "#ECE7E2"
+        self.set_camera_orientation(phi=0.35*PI, theta=0.3*PI, frame_center=[4,0,2], zoom=0.7)
+
+        axes = ThreeDAxes(x_range=[-3.5, 3.5, 1],
+                          y_range=[-3.5, 3.5, 1],
+                          z_range=[0, 6, 1],
+                          axis_config={"color": BLACK})
+
+        def func(x, y):
+            return x, y, 3*(1-np.cos(x)) + y**2
+
+        ham_surf = OpenGLSurface(
+            lambda x,y: func(x,y),
+            u_range=[-2.7, 2.7],
+            v_range=[-2.7, 2.7])
+
+        #self.play(Create(axes))
+        self.add(ham_surf)
+        self.wait(2)
+
+class test6_(ThreeDSlide):
+    def construct(self):
+        self.camera.background_color = "#ECE7E2"
+        self.set_camera_orientation(phi=0.35*PI, theta=0.3*PI)
+
+        data = np.load("../data/solar_system/data.npy")
+
+        objects = VGroup()
+
+        s = Sphere([0,0,0], radius=0.01).set_color(YELLOW)
+        objects.add(s)
+
+        max = abs(data).max(2).max(1).max(0)
+        colors = ["#979393", "#D5D6D0", "#BF9373", "#A78E80", '#A4976B', "#941751", "#0433FF"]
+        for i in range(len(data)):
+            x = 6 * data[i][0].T[0] / max[0]
+            y = 6 * data[i][0].T[1] / max[1]
+            z = 3 * data[i][0].T[2] / max[2]
+
+            if targets[i] == "uranus" or targets[i] == "neptun":
+                n = 4
+            else:
+                n=20
+
+            for j in tqdm(range(int(len(x)/n))):
+                p = Dot([x[j*n], y[j*n], z[j*n]], color=colors[i], radius=0.005)
+                objects.add(p)
+
+
+        self.play(FadeIn(objects.scale(4)))
+        #self.begin_ambient_camera_rotation(rate=1, about='theta')
+        #self.play(objects.animate.scale(0.2), run_time=6)
         self.wait(1)
-        self.move_camera(phi=0.3*PI, theta=0.3*PI, frame_center=[4,0,1], run_time=2, added_anims=[Transform(VF_HNN, ham_surf)])
-        self.move_camera(phi=0.35*PI, theta=2.15*PI, run_time=4)
-        for i in range(1, 2):
-            x, y = 0.7 * q_HNN[2 * i] + 4, 0.7 * p_HNN[2 * i]
-            self.play(p_dot.animate.move_to([x, y, 0]), run_time=0.01)
+
+
 
 
 class all(Slide):
